@@ -1,0 +1,3 @@
+arr.slice(a, b) 返回[a,b)中的数据
+数组.unshift(a) 在数组的前面加上a
+fruits.splice(2,0,"Lemon","Kiwi");2:index,0:delete number, 之后：content
