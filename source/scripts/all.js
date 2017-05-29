@@ -238,7 +238,7 @@ define("scripts/game.js", function(exports){
 	
 	var scoreNumber = 0;
 	var random = Ucren.randomNumber;
-	var volleyNum = 1, volleyMultipleNumber = 5;
+	var volleyNum = 2, volleyMultipleNumber = 5;
 	var fruits = [];
 	var gameInterval;
 	
@@ -257,6 +257,17 @@ define("scripts/game.js", function(exports){
 	
 	    barbette();
 	};
+	var barbetteP = function(){
+	    if( fruits.length >= volleyNum )
+	        return ;
+	    var startX = random( 640 ), endX = random( 640 ), startY = 600;
+	    var f = fruit.create( startX, startY ).shotOutP( 0, endX );
+	
+	    fruits.push( f );
+	    snd.play();
+	
+	    barbetteP();
+	};
 	
 	// start game
 	
@@ -266,6 +277,15 @@ define("scripts/game.js", function(exports){
 	    timeline.setTimeout(function(){
 	        state( "game-state" ).set( "playing" );
 	        gameInterval = timeline.setInterval( barbette, 1e3 );
+	    }, 500);
+	};
+
+	exports.startP = function(){
+	    snd = sound.create( "sound/throw" );
+	    boomSnd = sound.create( "sound/boom" );
+	    timeline.setTimeout(function(){
+	        state( "game-state" ).set( "playing" );
+	        gameInterval = timeline.setInterval( barbetteP, 1e3 );
 	    }, 500);
 	};
 	
@@ -289,6 +309,7 @@ define("scripts/game.js", function(exports){
 	*/
 	
 	exports.gameOver = function(){
+		return;
 	    state( "game-state" ).set( "over" );
 	    gameInterval.stop();
 	
@@ -526,6 +547,10 @@ define("scripts/main.js", function(exports){
 	        game.sliceAt( fruit, angle );
 	        return ;
 	    }
+	    if( state( "sence-name" ).is( "dojo-body" ) ){
+        	game.sliceAt( fruit, angle );
+        	return ;
+    	}
 	
 	    if( state( "sence-name" ).is( "home-menu" ) ){
 	        fruit.broken( angle );
@@ -667,7 +692,8 @@ define("scripts/sence.js", function(exports){
 	        senceState.set( "entering" );
 	        switch( name ){
 	            case "home-menu": this.showMenu( onShow ); break;
-	            case "dojo-body": this.showDojo( onShow ); break;
+	            //case "dojo-body": this.showDojo( onShow ); break;
+	            case "dojo-body": this.showNewGameP( onShow ); break;
 	            case "game-body": this.showNewGame( onShow ); break;
 	            case "quit-body": this.showQuit( onShow ); break;
 	        }
@@ -676,7 +702,8 @@ define("scripts/sence.js", function(exports){
 	    var onShow = function(){
 	        senceState.set( "ready" );
 	
-	        if( name == "dojo-body" || name == "quit-body" ){
+	        //if( name == "dojo-body" || name == "quit-body" ){
+	        if( name == "quit-body" ){
 	            exports.switchSence( "home-menu" );
 	        }
 	    };
@@ -742,6 +769,15 @@ define("scripts/sence.js", function(exports){
 	    score.show();
 	    lose.show();
 	    game.start();
+	    
+	    gameStartSnd.play();
+	    setTimeout( callback, 1000 );
+	};
+	// to enter para game body
+	exports.showNewGameP = function( callback ){
+	    score.show();
+	    lose.show();
+	    game.startP();
 	    
 	    gameStartSnd.play();
 	    setTimeout( callback, 1000 );
@@ -1292,7 +1328,6 @@ define("scripts/factory/fruit.js", function(exports){
 	
 	function ClassFruit(conf){
 	    var info = infos[ conf.type ], radius = info[3];
-	
 		this.type = conf.type;
 	    this.originX = conf.originX;
 	    this.originY = conf.originY;
@@ -1300,6 +1335,7 @@ define("scripts/factory/fruit.js", function(exports){
 	    this.startX = conf.originX;
 	    this.startY = conf.originY;
 	    this.radius = radius;
+	    this.angle = 0;
 	
 	    this.anims = [];
 	    this.knife = knife.newKnife();
@@ -1364,6 +1400,15 @@ define("scripts/factory/fruit.js", function(exports){
 		timeline.createTask({ 
 			start: start, duration: -1, 
 			object: this, onTimeUpdate: this.onRotating,
+			recycle: this.anims
+		});
+	};
+
+	ClassFruit.prototype.rotateP = function( start, speed ){
+		this.rotateSpeed = speed || rotateSpeed[ random( 6 ) ];
+		timeline.createTask({ 
+			start: start, duration: -1, 
+			object: this, onTimeUpdate: this.onRotatingP,
 			recycle: this.anims
 		});
 	};
@@ -1436,6 +1481,28 @@ define("scripts/factory/fruit.js", function(exports){
 	
 			if( this.type != "boom" )
 			 	this.rotate( 0, ( random( 180 ) + 90 ) * sign[ random( 2 ) ] );
+	
+			return this;
+		};
+	}();
+	ClassFruit.prototype.shotOutP = function(){
+		var sign = [ -1, 1 ];
+	    return function( start, endX ){
+	
+			this.shotOutStartX = this.originX;
+			this.shotOutStartY = this.originY;
+			this.shotOutEndX = average( this.originX, endX );
+			this.shotOutEndY = min( this.startY - random( this.startY - 100 ), 200 );
+			this.fallOffToX = endX;
+	
+			timeline.createTask({
+				start: start, duration: dropTime, object: this,
+				onTimeUpdate: this.onShotOuting, onTimeStart: this.onShotOutStart, onTimeEnd: this.onShotOutEnd,
+				recycle: this.anims
+			});
+	
+			if( this.type != "boom" )
+			 	this.rotateP( 0, ( random( 180 ) + 90 ) * sign[ random( 2 ) ] );
 	
 			return this;
 		};
@@ -1521,9 +1588,49 @@ define("scripts/factory/fruit.js", function(exports){
 	};
 	
 	ClassFruit.prototype.onRotating = function( time ){
-		//this.image.rotate( ( this.rotateSpeed * time / 1e3 ) % 360, true );
-		this.image.rotate( 90, true );
+		this.angle = ( this.rotateSpeed * time / 1e3 ) % 360;
+		this.image.rotate( this.angle, true );
+		//this.image.rotate( 30, true );
 	};
+
+	ClassFruit.prototype.onRotatingP = function( time ){
+		this.angle = 0;
+		this.image.rotate( this.angle, true );
+		//this.image.rotate( 30, true );
+	};
+
+	ClassFruit.prototype.getLineArr = function(){
+		var arr_line = new Array(4);
+		var x1 = this.radius;
+		var y1 = 0;
+		var x2 = -this.radius;
+		var y2 = 0;
+		if(this.type=="banana")
+		{
+			x1 += 20;
+			//x2 += 30;
+		}
+		var x, y;
+		var pi = 3.1415926;
+		var theta = 2*pi*this.angle/360;
+		//log(theta);
+		x = x1*Math.cos(theta);
+		y = x1*Math.sin(theta);
+		//log(x);
+		//log(y);
+		arr_line[0] = x+this.originX;
+		arr_line[1] = y+this.originY;
+		x = x2*Math.cos(theta);
+		y = x2*Math.sin(theta);
+		//log(x);
+		//log(y);
+		arr_line[2] = x+this.originX;
+		arr_line[3] = y+this.originY;
+		//log(arr_line[0]);
+		//log.clear();
+
+		return arr_line;
+	}
 	
 	// 裂开相关
 	
@@ -1565,18 +1672,50 @@ define("scripts/factory/fruit.js", function(exports){
 		for(var i = 0; i < fruitCache.length; i++)
 		{
 			if(fruitCache[i].type=="boom")
+			{
 				fruit_len--;
+				continue;
+			}
+			var arr_line = this.getLineArr();
+			/*
+			log(arr_line[0]);
+			log(arr_line[1]);
+			log(arr_line[2]);
+			log(arr_line[3]);
+			log.clear();
+			*/
+			answer.newAnswer();
+			answer.through(arr_line[0], arr_line[1]);
+			answer.through(arr_line[2], arr_line[3]);
 		}
+		/*
 		if(fruit_len==2&&fruitCache.length==fruit_len)
 		{
-			var x1 = fruitCache[0].originX;
+			var x1 = fruitCache[0].originX+fruitCache[0].radius;
 			var y1 = fruitCache[0].originY;
-			var x2 = fruitCache[1].originX;
+			var x2 = fruitCache[1].originX+fruitCache[1].radius;
 			var y2 = fruitCache[1].originY;
+			var x3 = fruitCache[0].originX-fruitCache[0].radius;
 			answer.newAnswer();
 			answer.through(x1, y1);
-			answer.through(x2, y2);
+			answer.through(x3, y1);
 		}
+		*/
+		
+		/*
+		if(fruit_len>1)
+		{
+			var arr_line = new Array;
+			for(var i = 0; i < fruitCache.length; i++)
+			{
+				if(fruitCache[i].type=="boom")
+				{
+					continue;
+				}
+				var fruit = fruitCache[i];
+			}
+		}
+		*/
 		this.pos(
 			linearAnim( time, this.shotOutStartX, this.shotOutEndX - this.shotOutStartX, dropTime ),
 			fallOffAnim( time, this.shotOutStartY, this.shotOutEndY - this.shotOutStartY, dropTime )
@@ -1602,8 +1741,23 @@ define("scripts/factory/fruit.js", function(exports){
 		for(var i = 0; i < fruitCache.length; i++)
 		{
 			if(fruitCache[i].type=="boom")
+			{
 				fruit_len--;
+				continue;
+			}
+			var arr_line = this.getLineArr();
+			/*
+			log(arr_line[0]);
+			log(arr_line[1]);
+			log(arr_line[2]);
+			log(arr_line[3]);
+			log.clear();
+			*/
+			answer.newAnswer();
+			answer.through(arr_line[0], arr_line[1]);
+			answer.through(arr_line[2], arr_line[3]);
 		}
+		/*
 		if(fruit_len==2&&fruitCache.length==fruit_len)
 		{
 			var x1 = fruitCache[0].originX;
@@ -1614,6 +1768,7 @@ define("scripts/factory/fruit.js", function(exports){
 			answer.through(x1, y1);
 			answer.through(x2, y2);
 		}
+		*/
 		this.pos( 
 			linearAnim( time, this.brokenPosX, this.fallTargetX - this.brokenPosX, dropTime ), 
 			dropAnim( time, this.brokenPosY, this.fallTargetY - this.brokenPosY, dropTime ) 
