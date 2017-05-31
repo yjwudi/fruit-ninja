@@ -508,6 +508,11 @@ define("scripts/main.js", function(exports){
 	    };
 	    return fn;
 	}();
+
+	//var EventEmitter = require('events').EventEmitter; 
+	//var event = new EventEmitter(); 
+
+	
 	
 	exports.start = function(){
 	
@@ -520,6 +525,15 @@ define("scripts/main.js", function(exports){
 	    log( "正在初始化" );
 		log( "正在启动游戏..." );
 	    log.clear();
+	    /*
+	    event.on('some_event', function() { 
+			log('some_event 事件触发'); 
+			//console.log('some_event 事件触发'); 
+		}); 
+	    setTimeout(function() { 
+			event.emit('some_event'); 
+		}, 1000); 
+		*/
 	    /*
 	    layer.path( "M" + 100 + "," + 20 + "L" + 100 + "," + 200 ).attr({
 			"stroke": color,
@@ -1677,6 +1691,31 @@ define("scripts/factory/fruit.js", function(exports){
 				continue;
 			}
 			var arr_line = this.getLineArr();
+			//发送arr_line的四个坐标
+			var xmlhttp;
+  			if (window.XMLHttpRequest) 
+  			{ // code for IE7+, Firefox, Chrome, Opera, Safari
+			    xmlhttp = new XMLHttpRequest();
+			} 
+			else 
+			{ // code for IE6, IE5
+			    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange = function() {
+			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
+			{
+			    console.log('服务器响应成功');
+			    //document.getElementById("out_tip").innerHTML;
+			    var ss =xmlhttp.responseText;
+			    document.getElementById("out_tip").innerHTML = ss.length;
+			}
+			}
+			  xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);
+			  xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
+			  xmlhttp.send(JSON.stringify(arr_line)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
+			  //console.log(text);
+			  //console.log(JSON.stringify(text));
+			  //console.log(typeof JSON.stringify(text));
 			/*
 			log(arr_line[0]);
 			log(arr_line[1]);

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ajax</title>
+</head>
+<body>
+<input type="button" value="传输" name="save" id="save_data" onclick="testAjax()">
+<div id="out_tip" style="border:1px solid red;height:30px;margin-top:10px;line-height:30px;"></div>
+<script>
+function testAjax()
+{ 
+  var text = new Array(3);
+  text[0] = 1;
+  text[1] = 2;
+  text[2] = 3;
+  //var text={"name":"张三","age":40}; //这是一个json对象
+  var xmlhttp;
+  if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
+    xmlhttp = new XMLHttpRequest();
+  } else { // code for IE6, IE5
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  }
+  xmlhttp.onreadystatechange = function() {
+    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+      console.log('服务器响应成功');
+      //document.getElementById("out_tip").innerHTML;
+      var ss =xmlhttp.responseText;
+      document.getElementById("out_tip").innerHTML = ss.length;
+    }
+  }
+  xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);
+  xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
+  xmlhttp.send(JSON.stringify(text)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
+  console.log(text);
+  console.log(JSON.stringify(text));
+  console.log(typeof JSON.stringify(text));
+}
+</script>
+</body>
+</html>

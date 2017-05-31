@@ -1,30 +1,44 @@
-var express = require('express');
-var app = express();
+var http = require("http");
+var fs = require('fs');
+var url = require('url');
+exports.start = function(){
+    http.createServer(function(request, response) {
+        var pathname = url.parse(request.url).pathname;
+        console.log(pathname);
+        var ext = pathname.match(/(\.[^.]+|)$/)[0];//取得后缀名
+        console.log(ext);
+        switch(ext){
+            case ".jpg":
+            case ".png":
+            case ".css":
+            case ".js":
+                console.log("."+request.url);
+                fs.readFile("."+request.url, 'utf-8',function (err, data) {//读取内容
+                    if (err) throw err;
+                    response.writeHead(200, {
+                        "Content-Type": {
+                             ".css":"text/css",
+                             ".js":"application/javascript",
+                             ".png":"application/png",
+                             ".jpg":"image/jpeg"
+                      }[ext]
+                    });
+                    response.write(data);
+                    response.end();
+                });
+                break;
+            default:
+                fs.readFile('./index.html', 'utf-8',function (err, data) {//读取内容
+                    if (err) throw err;
+                    response.writeHead(200, {
+                        "Content-Type": "text/html"
+                    });
+                    response.write(data);
+                    response.end();
+                });
  
-app.use(express.static('scripts'));
+        }
  
-app.get('/index.html', function (req, res) {
-	//console.log(__dirname + "\\" + "index.html");
-   res.sendFile( __dirname + "\\" + "index.html" );
-   //res.sendFile("C:\\Users\\yjwudi\\Desktop\\fruit-ninja-master\\source\\scripts\\all.js" );
-})
- 
-app.get('/process_get', function (req, res) {
- 
-   // 输出 JSON 格式
-   response = {
-       first_name:req.query.first_name,
-       last_name:req.query.last_name
-   };
-   console.log(response);
-   res.end(JSON.stringify(response));
-})
- 
-var server = app.listen(8081, function () {
- 
-  var host = server.address().address
-  var port = server.address().port
- 
-  console.log("应用实例，访问地址为 http://%s:%s", host, port)
- 
-})
+    }).listen(8888);
+    console.log("server start...");
+}

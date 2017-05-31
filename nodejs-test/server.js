@@ -1,15 +1,72 @@
-var http = require('http');
+var http = require("http");
+var fs = require('fs');
+var url = require('url');
+var libPath = require("path");
+var funGetContentType=function(filePath){
+    var contentType="";
 
-http.createServer(function (request, response) {
+    //使用路径解析模块获取文件扩展名
+    var ext=libPath.extname(filePath);
 
-	// 发送 HTTP 头部 
-	// HTTP 状态值: 200 : OK
-	// 内容类型: text/plain
-	response.writeHead(200, {'Content-Type': 'text/plain'});
-
-	// 发送响应数据 "Hello World"
-	response.end('Hello World\n');
-}).listen(8888);
-
-// 终端打印如下信息
-console.log('Server running at http://127.0.0.1:8888/');
+    console.log(filePath);
+    switch(ext){
+        case ".html":
+            contentType= "text/html";
+            break;
+        case ".js":
+            contentType="text/javascript";
+            break;
+        case ".css":
+            contentType="text/css";
+            break;
+        case ".gif":
+            contentType="image/gif";
+            break;
+        case ".jpg":
+            contentType="image/jpeg";
+            break;
+        case ".png":
+            contentType="image/png";
+            break;
+        case ".ico":
+            contentType="image/icon";
+            break;
+        default:
+        contentType="application/octet-stream";
+    }
+    return contentType; //返回内容类型字符串
+}
+exports.start = function(){
+    http.createServer(function(request, response) {
+        var pathname = url.parse(request.url).pathname;
+        console.log(pathname);
+        var ext = pathname.match(/(\.[^.]+|)$/)[0];//取得后缀名
+        console.log(ext);
+        switch(ext){
+        	case ".png":
+            case ".css":
+            case ".js":
+            	var fname = require('path').join(__dirname, "."+request.url);
+            	console.log(fname);
+                fs.readFile(fname/*"."+request.url*/, 'utf-8',function (err, data) {//读取内容
+                    if (err) throw err;
+                    response.writeHead(200, {"Content-Type": funGetContentType("."+request.url)});
+                    response.write(data);
+                    response.end();
+                });
+                break;
+            default:
+                fs.readFile('./index.html', 'utf-8',function (err, data) {//读取内容
+                    if (err) throw err;
+                    response.writeHead(200, {
+                        "Content-Type": "text/html"
+                    });
+                    response.write(data);
+                    response.end();
+                });
+ 
+        }
+ 
+    }).listen(8888);
+    console.log("server start...");
+}
