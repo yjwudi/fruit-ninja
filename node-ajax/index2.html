@@ -10,10 +10,22 @@
 <script>
 function testAjax()
 { 
-  var text = new Array(3);
-  text[0] = 1;
-  text[1] = 2;
-  text[2] = 3;
+  
+  var text = new Array(4);
+  text[0] = 304.5625;
+  text[1] = 578.3025;
+  text[2] = 252.5625;
+  text[3] = 578.3025;
+  /*text[4] = 3;
+  text[5] = 2;
+  text[6] = 4;
+  text[7] = 1;
+  text[8] = 0;
+  text[9] = -3;
+  text[10] = -1;
+  text[11] = -4;*/
+  
+  //var text = new Array(304.5625, 578.3025, 252.5625, 578.3025);
   //var text={"name":"张三","age":40}; //这是一个json对象
   var xmlhttp;
   if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -26,7 +38,8 @@ function testAjax()
       console.log('服务器响应成功');
       //document.getElementById("out_tip").innerHTML;
       var ss =xmlhttp.responseText;
-      document.getElementById("out_tip").innerHTML = ss.length;
+      var arr = ss.split(" ");
+      document.getElementById("out_tip").innerHTML = arr[0];
     }
   }
   xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);

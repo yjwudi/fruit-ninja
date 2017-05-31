@@ -969,7 +969,7 @@ define("scripts/timeline.js", function(exports){
 	
 		// interval();
 		
-		var time = 1;
+		var time = 10;
 	
 		// if( Ucren.isSafari )
 		//     time = 10;
@@ -1321,7 +1321,7 @@ define("scripts/factory/fruit.js", function(exports){
 	var min = Math.min;
 	var average = function( a, b ){ return ( ( a + b ) / 2 ) >> 0; };
 	
-	var dropTime = 1200, dropXScope = 200, shadowPos = 50;
+	var dropTime = 3600, dropXScope = 200, shadowPos = 50;
 	
 	var infos = {
 		// type: [ imageSrc, width, height, radius, fixAngle, isReverse, juiceColor ]
@@ -1336,7 +1336,8 @@ define("scripts/factory/fruit.js", function(exports){
 	// TODO: 是否水果全开？
 	var types = [ "peach", "sandia", "apple", "banana", "basaha" ];
 	// var types = [ "sandia", "boom" ];
-	var rotateSpeed = [ 60, 50, 40, -40, -50, -60 ];
+	//var rotateSpeed = [ 60, 50, 40, -40, -50, -60 ];
+	var rotateSpeed = [ 0.600, 0.500, 0.400, -0.400, -0.500, -0.600 ];
 	
 	var fruitCache = [];
 	
@@ -1494,7 +1495,7 @@ define("scripts/factory/fruit.js", function(exports){
 			});
 	
 			if( this.type != "boom" )
-			 	this.rotate( 0, ( random( 180 ) + 90 ) * sign[ random( 2 ) ] );
+			 	this.rotate( 0, 1/*( random( 180 ) + 90 ) * sign[ random( 2 ) ]*/ );
 	
 			return this;
 		};
@@ -1683,15 +1684,27 @@ define("scripts/factory/fruit.js", function(exports){
 	
 	ClassFruit.prototype.onShotOuting = function( time ){
 		var fruit_len = fruitCache.length;
-		for(var i = 0; i < fruitCache.length; i++)
+		var text = new Array;
+		for(var i = 0, idx = 0; i < fruitCache.length; i++)
 		{
 			if(fruitCache[i].type=="boom")
 			{
 				fruit_len--;
 				continue;
 			}
-			var arr_line = this.getLineArr();
-			//发送arr_line的四个坐标
+			var arr_line = fruitCache[i].getLineArr();
+			text[idx] = arr_line[0];
+			text[idx+1] = arr_line[1];
+			text[idx+2] = arr_line[2];
+			text[idx+3] = arr_line[3];
+			idx = idx+4;
+			answer.newAnswer();
+			answer.through(arr_line[0], arr_line[1]);
+			answer.through(arr_line[2], arr_line[3]);
+		}
+			    	
+		if(text.length>4)
+		{
 			var xmlhttp;
   			if (window.XMLHttpRequest) 
   			{ // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -1704,57 +1717,38 @@ define("scripts/factory/fruit.js", function(exports){
 			xmlhttp.onreadystatechange = function() {
 			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
 			{
-			    console.log('服务器响应成功');
+			    //console.log('服务器响应成功');
 			    //document.getElementById("out_tip").innerHTML;
 			    var ss =xmlhttp.responseText;
-			    document.getElementById("out_tip").innerHTML = ss.length;
+			    
+			    var arr = ss.split(" ");
+			    if(arr.length==2)
+			    {
+			    	//log(arr[0]);
+			    	//log(arr[1]);
+			    	arr[0] = -0.0451118;
+			    	arr[1] = -606.899;
+			    	answer.newAnswer();
+				    answer.through(100, 100);
+					answer.through(290, 390);
+					/*
+			    	answer.newAnswer();
+				    answer.through(100, arr[0]*100-arr[1]);
+					answer.through(290, arr[0]*290-arr[1]);
+					*/
+					//answer.through(10, 590);
+					///answer.through(590, 10);
+					//log.clear();
+			    }
+			    
+			    //document.getElementById("out_tip").innerHTML = ss.length;
 			}
 			}
-			  xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);
-			  xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
-			  xmlhttp.send(JSON.stringify(arr_line)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
-			  //console.log(text);
-			  //console.log(JSON.stringify(text));
-			  //console.log(typeof JSON.stringify(text));
-			/*
-			log(arr_line[0]);
-			log(arr_line[1]);
-			log(arr_line[2]);
-			log(arr_line[3]);
-			log.clear();
-			*/
-			answer.newAnswer();
-			answer.through(arr_line[0], arr_line[1]);
-			answer.through(arr_line[2], arr_line[3]);
+			xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);
+			xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
+			xmlhttp.send(JSON.stringify(text)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
 		}
-		/*
-		if(fruit_len==2&&fruitCache.length==fruit_len)
-		{
-			var x1 = fruitCache[0].originX+fruitCache[0].radius;
-			var y1 = fruitCache[0].originY;
-			var x2 = fruitCache[1].originX+fruitCache[1].radius;
-			var y2 = fruitCache[1].originY;
-			var x3 = fruitCache[0].originX-fruitCache[0].radius;
-			answer.newAnswer();
-			answer.through(x1, y1);
-			answer.through(x3, y1);
-		}
-		*/
 		
-		/*
-		if(fruit_len>1)
-		{
-			var arr_line = new Array;
-			for(var i = 0; i < fruitCache.length; i++)
-			{
-				if(fruitCache[i].type=="boom")
-				{
-					continue;
-				}
-				var fruit = fruitCache[i];
-			}
-		}
-		*/
 		this.pos(
 			linearAnim( time, this.shotOutStartX, this.shotOutEndX - this.shotOutStartX, dropTime ),
 			fallOffAnim( time, this.shotOutStartY, this.shotOutEndY - this.shotOutStartY, dropTime )

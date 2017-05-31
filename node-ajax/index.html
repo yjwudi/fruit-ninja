@@ -4,20 +4,59 @@
     <meta charset="UTF-8">
     <title>node中的ajax请求(html5页面)</title>
     <script type="text/javascript">
-        var arr = new Array(3);
-        arr[0] = 1.1;
-        arr[1] = 0;
-        arr[2] = 9.9;
+        function createCORSRequest(method, url) {
+          var xhr = new XMLHttpRequest();
+          if ("withCredentials" in xhr) {
+            console.log('he1');
+            // Check if the XMLHttpRequest object has a "withCredentials" property.
+            // "withCredentials" only exists on XMLHTTPRequest2 objects.
+            xhr.open(method, url, true);
+
+          } else if (typeof XDomainRequest != "undefined") {
+
+            // Otherwise, check if XDomainRequest.
+            // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
+            console.log('he2');
+            xhr = new XDomainRequest();
+            xhr.open(method, url);
+
+          } else {
+
+            // Otherwise, CORS is not supported by the browser.
+            xhr = null;
+
+          }
+          return xhr;
+        }
         function GetData(){
-            var xhr=new XMLHttpRequest();
-            xhr.open("GET","http://localhost:1337/",true);
+            console.log('he');
+            var xhr=createCORSRequest('GET', "http://localhost:1337/");//new XMLHttpRequest();
+            //xhr.open("GET","http://localhost:1337/",true);
+            if (!xhr) {
+              throw new Error('CORS not supported');
+            }
+            function getTitle(text) {
+              return text.match('<title>(.*)?</title>')[1];
+            }
+/*
             xhr.onreadystatechange=function(){
                 if(xhr.readyState==4){
                     if(xhr.status==200){
-                        document.getElementById("res").innerHTML=xhr.responseText;
+                        //document.getElementById("res").innerHTML=xhr.responseText;
+                        document.getElementById("res").innerHTML="eee";
                     }
                 }
             }
+*/
+            xhr.onload = function() {
+                var text = xhr.responseText;
+                var title = getTitle(text);
+                alert('Response from CORS request to ' + url + ': ' + title);
+              };
+
+              xhr.onerror = function() {
+                alert('Woops, there was an error making the request.');
+              };
             xhr.send(null);
         }
     </script>
