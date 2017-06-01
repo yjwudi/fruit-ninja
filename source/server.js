@@ -22,8 +22,8 @@ app.all('*', function(req, res, next) {
 app.post("/ajaxjs.js", function(request, response){
   var str = request.body;
   //var arr = str.split(",");
-  console.log(str.length);
-  console.log(str);      // this a json object
+  //console.log(str.length);
+  //console.log(str);      // this a json object
   //response.send(str);    // echo the result back
   //var test = '557 600 451 600 551 600 487 600 334 600 270 600 240 600 134 600';
   var arr = str[0].toString();
@@ -31,9 +31,9 @@ app.post("/ajaxjs.js", function(request, response){
   {
     arr = arr + ' ' + str[i].toString();
   }
-  console.log(arr.length);
-  console.log(arr);
-  /*
+  //console.log(arr.length);
+  //console.log(arr);
+  
   const execFile = require('child_process').execFile;
   const child = execFile('.\\Exec\\DoubleWedgeIntersaction-argc.exe',[arr], (error, stdout, stderr) =>{
     if(error){
@@ -42,8 +42,8 @@ app.post("/ajaxjs.js", function(request, response){
     console.log(stdout);
     response.send(stdout);
   });
-  */
-  response.send("hello");
+  
+  //response.send("hello");
   
 });
 

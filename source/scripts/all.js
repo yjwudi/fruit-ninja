@@ -5,6 +5,7 @@
  * @site http://ucren.com
  */
 
+var mutex = 1;
 //定义一个函数并立即执行，参数是传入的this。
 void function(global){
 	var mapping = {}, cache = {};
@@ -238,7 +239,7 @@ define("scripts/game.js", function(exports){
 	
 	var scoreNumber = 0;
 	var random = Ucren.randomNumber;
-	var volleyNum = 2, volleyMultipleNumber = 5;
+	var volleyNum = 4, volleyMultipleNumber = 5;
 	var fruits = [];
 	var gameInterval;
 	
@@ -489,6 +490,7 @@ define("scripts/main.js", function(exports){
 	var state = require("scripts/state");
 	var game = require("scripts/game");
 	var collide = require("scripts/collide");
+	var cuttimeline = require("scripts/cuttimeline");
 
 	var layer = require( "scripts/layer" ).getLayer( "knife" );
 	var color = "#cbd3db";
@@ -516,7 +518,7 @@ define("scripts/main.js", function(exports){
 	
 	exports.start = function(){
 	
-	    [ timeline, sence, control ].invoke( "init" );
+	    [ timeline, sence, control, cuttimeline ].invoke( "init" );
 	
 	    log( "正在加载鼠标控制脚本" );
 	    log( "正在加载图像资源" );
@@ -926,9 +928,10 @@ define("scripts/state.js", function(exports){
 });
 
 
-/**
- * @source D:\hosting\demos\fruit-ninja\output\scripts\timeline.js
- */ 
+
+
+
+ 
 define("scripts/timeline.js", function(exports){
 	/**
 	 * a easy timeline manager
@@ -969,7 +972,238 @@ define("scripts/timeline.js", function(exports){
 	
 		// interval();
 		
-		var time = 500;//10;
+		var time = 40;//10;没用了
+	
+		// if( Ucren.isSafari )
+		//     time = 10;
+	
+		setInterval( function(){
+		    me.count ++;
+		    update( now() );
+		}, time );
+	};
+	
+	/**
+	 * create a task
+	 * @param  {Object} conf 	the config
+	 * @return {Task} 			a task instance
+	 */
+	exports.createTask = function( conf ){
+		/* e.g. createTask({
+			start: 500, duration: 2000, data: [a, b, c,..],
+			object: module, onTimeUpdate: fn(time, a, b, c,..), onTimeStart: fn(a, b, c,..), onTimeEnd: fn(a, b, c,..),
+			recycle: []
+		}); */
+		var task = createTask(conf);
+	    addingTasks.unshift( task );
+	    adding = 1;
+	
+	    if( conf.recycle )
+	    	this.taskList( conf.recycle, task );
+	
+	    return task;
+	};
+	
+	/**
+	 * use a array to recycle the task
+	 * @param  {Array} queue	be use for recycling task
+	 * @param  {Task} task 		a task instance		
+	 * @return {Array}			this queue
+	 */
+	exports.taskList = function( queue, task ){
+		if( !queue.clear )
+			queue.clear = function(){
+				for(var task, i = this.length - 1; i >= 0; i --)
+					task = this[i],
+					task.stop(),
+					this.splice( i, 1 );
+				return this;
+			};
+	
+		if( task )
+		    queue.unshift( task );
+	
+		return queue;
+	};
+	
+	/**
+	 * create a timer for once callback
+	 * @param {Function} fn 	callback function
+	 * @param {Number}   time 	time, unit: ms
+	 */
+	 // 可以将这个函数理解为js的setTimeout，time后执行fn一次
+	 // 区别是这个有返回值
+	
+	exports.setTimeout = function( fn, time ){
+	    // e.g. setTimeout(fn, time);
+	    return this.createTask({ start: time, duration: 0, onTimeStart: fn });
+	};
+	
+	exports.setTimeout2 = function( fn1, fn2, time ){
+    	// e.g. setTimeout(fn, time);
+    	return this.createTask({ start: time, duration: 0, onTimeStart: fn1, onTimeUpdate:fn2 });
+	};
+	
+	/**
+	 * create a timer for ongoing callback
+	 * @param {Function} fn 	callback function
+	 * @param {Number}   time 	time, unit: ms
+	 */
+	exports.setInterval = function( fn, time ){
+	    // e.g. setInterval(fn, time);
+	    var timer = setInterval( fn, time );
+	    return {
+	    	stop: function(){
+	    	    clearInterval( timer );
+	    	}
+	    };
+	};
+	
+	/**
+	 * get the current fps
+	 * @return {Number} fps number
+	 */
+	exports.getFPS = function(){
+		var t = now(), fps = this.count / (t - this.startTime) * 1e3;
+		if(this.count > 1e3)
+			this.count = 0,
+			this.startTime = t;
+		return fps;
+	};
+	
+	/**
+	 * @private
+	 */
+	
+	var Ucren = require("scripts/lib/ucren");
+	var tasks = [], addingTasks = [], adding = 0;
+	
+	var now = function(){
+		return new Date().getTime();
+	};
+	
+	// var requestAnimationFrame = function( glob ){
+	// 	return glob.requestAnimationFrame ||
+	// 		glob.mozRequestAnimationFrame ||
+	// 		glob.webkitRequestAnimationFrame ||
+	// 		glob.msRequestAnimationFrame ||
+	// 		glob.oRequestAnimationFrame || function( callback ) {
+	// 			setTimeout( callback, 1 );
+	// 		};
+	// }( window );
+	
+	var createTask = function( conf ){
+		var object = conf.object || {};
+		conf.start = conf.start || 0;
+		return {
+			start: conf.start + now(),
+			duration: conf.duration == -1 ? 86400000 : conf.duration,
+			data: conf.data ? [0].concat( conf.data ) : [0],
+			started: 0,
+			object: object,
+			onTimeStart: conf.onTimeStart || object.onTimeStart || Ucren.nul,
+			onTimeUpdate: conf.onTimeUpdate || object.onTimeUpdate || Ucren.nul,
+			onTimeEnd: conf.onTimeEnd || object.onTimeEnd || Ucren.nul,
+			stop: function(){
+			    this.stopped = 1;
+			}
+		}
+	};
+	
+	var updateTask = function( task, time ){
+		var data = task.data;
+		data[0] = time;
+		task.onTimeUpdate.apply( task.object, data );
+	};
+	
+	var checkStartTask = function( task ){
+		if( !task.started ){
+			task.started = 1;
+		    task.onTimeStart.apply( task.object, task.data.slice(1) );
+		    updateTask( task, 0 );
+		}
+	};
+	
+	var update = function(time){
+		var i = tasks.length, t, task, start, duration, data;
+	
+		// TODO: 三八五时检查一下 tasks 有没有释放完成
+		// document.title = i;
+	
+		while( i -- ){
+	    	task = tasks[i];
+	    	start = task.start;
+	    	duration = task.duration;
+	
+	    	if( time >= start ){
+	
+	    		if( task.stopped ){
+	    		    tasks.splice( i, 1 );
+	    		    continue;
+	    		}
+	
+		    	checkStartTask( task );
+		    	if( ( t = time - start ) < duration )
+		    	    updateTask( task, t );
+		    	else
+		    		updateTask( task, duration ),
+		    		task.onTimeEnd.apply( task.object, task.data.slice(1) ),
+		    		tasks.splice( i, 1 );
+	    	}
+		}
+	
+	    if( adding ){
+	    	tasks.unshift.apply( tasks, addingTasks );
+	    	addingTasks.length = adding = 0;        
+	    }
+	};;
+
+	return exports;
+});
+
+
+
+define("scripts/cuttimeline.js", function(exports){
+	/**
+	 * a easy timeline manager
+	 * @version 0.9
+	 * @author dron
+	 */
+	
+	var Ucren = require("scripts/lib/ucren");
+
+	var csl = require( "scripts/object/console" );
+	var log = function(){
+    var time = 1e3, add = 300, fn;
+    fn = function( text ){
+        setTimeout( function(){ csl.log( text ); }, time );
+        time += add;
+    };
+    fn.clear = function(){
+        setTimeout( csl.clear.bind( csl ), time );
+        time += add;
+    };
+    return fn;
+	}();
+	
+	
+	/**
+	 * initialize timeline
+	 */
+	exports.init = function(){
+		var me = this;
+		me.startTime = now();
+		me.count = 0;
+	
+	 //    var interval = function(){
+		// 	me.count ++;
+		//     update( now() );
+		//     requestAnimationFrame( interval );
+		// };
+	
+		// interval();
+		
+		var time = 10;//10;
 	
 		// if( Ucren.isSafari )
 		//     time = 10;
@@ -1286,6 +1520,7 @@ define("scripts/factory/fruit.js", function(exports){
 	var juice = require("scripts/factory/juice");
 	var knife = require("scripts/object/knife");
 	var answer = require("scripts/object/Answer");
+	var cut = require("scripts/object/Cut");
 
 	
 	var color = "#cbd3db";
@@ -1321,7 +1556,7 @@ define("scripts/factory/fruit.js", function(exports){
 	var min = Math.min;
 	var average = function( a, b ){ return ( ( a + b ) / 2 ) >> 0; };
 	
-	var dropTime = 3600, dropXScope = 200, shadowPos = 50;
+	var dropTime = 4800, dropXScope = 200, shadowPos = 50;
 	
 	var infos = {
 		// type: [ imageSrc, width, height, radius, fixAngle, isReverse, juiceColor ]
@@ -1340,6 +1575,7 @@ define("scripts/factory/fruit.js", function(exports){
 	var rotateSpeed = [ 0.600, 0.500, 0.400, -0.400, -0.500, -0.600 ];
 	
 	var fruitCache = [];
+
 	
 	function ClassFruit(conf){
 	    var info = infos[ conf.type ], radius = info[3];
@@ -1609,7 +1845,7 @@ define("scripts/factory/fruit.js", function(exports){
 	};
 
 	ClassFruit.prototype.onRotatingP = function( time ){
-		this.angle = 0;
+		this.angle = 90;
 		this.image.rotate( this.angle, true );
 		//this.image.rotate( 30, true );
 	};
@@ -1683,8 +1919,13 @@ define("scripts/factory/fruit.js", function(exports){
 	// 抛出相关
 	
 	ClassFruit.prototype.onShotOuting = function( time ){
+		this.pos(
+			linearAnim( time, this.shotOutStartX, this.shotOutEndX - this.shotOutStartX, dropTime ),
+			fallOffAnim( time, this.shotOutStartY, this.shotOutEndY - this.shotOutStartY, dropTime )
+		);
 		var fruit_len = fruitCache.length;
 		var text = new Array;
+		var minx = 700, maxx = 0;
 		for(var i = 0, idx = 0; i < fruitCache.length; i++)
 		{
 			if(fruitCache[i].type=="boom")
@@ -1698,12 +1939,23 @@ define("scripts/factory/fruit.js", function(exports){
 			text[idx+2] = arr_line[2];
 			text[idx+3] = arr_line[3];
 			idx = idx+4;
+			minx = Math.min(minx, Math.min(arr_line[0], arr_line[2]));
+			maxx = Math.max(maxx, Math.max(arr_line[0], arr_line[2]))
 			answer.newAnswer();
 			answer.through(arr_line[0], arr_line[1]);
 			answer.through(arr_line[2], arr_line[3]);
-		}	    	
-		if(text.length>4)
+		}
+		var flag = cut.getFlag();
+		/*
+		if(mutex==0)
 		{
+			log(mutex);
+			log.clear();
+		}
+		*/
+		if(mutex == 1 && text.length > 4 && flag == 0)
+		{
+			mutex = 0;
 			var xmlhttp;
   			if (window.XMLHttpRequest) 
   			{ // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -1714,49 +1966,53 @@ define("scripts/factory/fruit.js", function(exports){
 			    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
 			}
 			xmlhttp.onreadystatechange = function() {
-				log(xmlhttp.readyState);
-				log(xmlhttp.status);
-				log.clear();
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
-			{
-			    //console.log('服务器响应成功');
-			    //document.getElementById("out_tip").innerHTML;
-			    //var ss =xmlhttp.responseText;
-			    
-			    //var arr = ss.split(" ");
-			    //if(arr.length==2)
-			    {
-			    	//log(arr[0]);
-			    	//log(arr[1]);
-			    	//arr[0] = -0.0451118;
-			    	//arr[1] = -606.899;
-			    	log("gen");
-			    	log.clear();
-			    	answer.newAnswer();
-				    answer.through(random(100), random(100)+300);
-					answer.through(random(100)+300, random(100));
-					/*
-			    	answer.newAnswer();
-				    answer.through(100, arr[0]*100-arr[1]);
-					answer.through(290, arr[0]*290-arr[1]);
-					*/
-					//answer.through(10, 590);
-					///answer.through(590, 10);
-					//log.clear();
-			    }
-			    
+				
+				//log(xmlhttp.readyState);
+				//log(xmlhttp.status);
+				//log.clear();
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
+				{
+					mutex = 1;
+				    //console.log('服务器响应成功');
+				    //document.getElementById("out_tip").innerHTML;
+				    var ss =xmlhttp.responseText;	    
+				    var arr = ss.split(" ");
+				    if(arr.length==2)
+				    {
+				    	//log(arr[0]);
+				    	//log(arr[1]);
+				    	//arr[0] = -0.0451118;
+				    	//arr[1] = -606.899;
+				    	var cut_line_flag = cut.newCut();
+				    	//log(cut_line_flag);
+						//log.clear();
+				    	//if(cut_line_flag==0)
+					    {
+					    	//cut.through(random(100), random(100)+300);
+							//cut.through(random(100)+300, random(100));
+							//cut.through(minx, 610);
+							//cut.through(maxx, -1);
+							minx = minx - 20;
+							maxx = maxx + 20;
+							var y1 = arr[0]*minx-arr[1];
+							var y2 = arr[0]*maxx-arr[1];
+							cut.through(minx, y1);
+							cut.through(maxx, y2);
+							//answer.newAnswer();
+							//answer.through(random(100), random(100)+300);
+							//answer.through(random(100)+300, random(100));
+						}
+				    }
 			    //document.getElementById("out_tip").innerHTML = ss.length;
 			}
 			}
+			
 			xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);
 			xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
 			xmlhttp.send(JSON.stringify(text)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
 		}
 		
-		this.pos(
-			linearAnim( time, this.shotOutStartX, this.shotOutEndX - this.shotOutStartX, dropTime ),
-			fallOffAnim( time, this.shotOutStartY, this.shotOutEndY - this.shotOutStartY, dropTime )
-		);
+		
 	};
 
 	ClassFruit.prototype.anslineEnd = function(){
@@ -1844,9 +2100,9 @@ define("scripts/factory/fruit.js", function(exports){
 	};
 	
 	function getType(){
-		if( random( 8 ) == 4 )
+		/*if( random( 8 ) == 4 )
 		    return "boom";
-		else
+		else*/
 	    	return types[ random( 5 ) ];
 	};
 
@@ -4821,6 +5077,7 @@ define("scripts/object/Answer.js", function(exports){
 	var color = "#cbd3db";
 	var anims = [];
 	var switchState = true;
+	var ans_line_flag = 0;
 	//var knifes = [];
 
 	function ClassAnswerPart( conf ){
@@ -4863,7 +5120,7 @@ define("scripts/object/Answer.js", function(exports){
 	};
 
 	ClassAnswerPart.prototype.update = function( time ){
-		this.line.attr( "stroke-width", stroke * (1 - time / life) + "px" );
+		//this.line.attr( "stroke-width", stroke * (1 - time / life) + "px" );
 	};
 
 	ClassAnswerPart.prototype.end = function(){
@@ -4884,6 +5141,123 @@ define("scripts/object/Answer.js", function(exports){
 		var ret = null;
 		if( lastX !== null && ( lastX != x || lastY != y ) )
 		    new ClassAnswerPart({ sx: lastX, sy: lastY, ex: x, ey: y }).set(),
+			ret = [ lastX, lastY, x, y ];
+
+		lastX = x;
+		lastY = y;
+		return ret;
+	};
+
+	exports.pause = function(){
+	    anims.clear();
+	    this.switchOff();
+	};
+
+	exports.switchOff = function(){
+	    switchState = false;
+	};
+
+	exports.switchOn = function(){
+		switchState = true;
+		//this.endAll();
+	};
+	/*
+	exports.endAll = function(){
+	    for(var i = knifes.length - 1; i >= 0; i --)
+			knifes[i].end();
+	};
+	*/
+
+	return exports;
+});
+
+define("scripts/object/Cut.js", function(exports){
+	var cuttimeline = require("scripts/timeline");
+	var layer = require("scripts/layer").getLayer( "knife" );
+	var Ucren = require("scripts/lib/ucren");
+	/**
+	 * 直线模块
+	 */
+	var lastX = null, lastY = null;
+	var abs = Math.abs;
+
+	var life = 20;
+	var stroke = 10;
+	var color = "#cbd3db";
+	var anims = [];
+	var switchState = true;
+	var cut_line_flag = 0;
+	//var knifes = [];
+
+	function ClassCutPart( conf ){
+	    this.sx = conf.sx;
+	    this.sy = conf.sy;
+	    this.ex = conf.ex;
+	    this.ey = conf.ey;
+
+	    //knifes.push( this );
+	}
+
+	ClassCutPart.prototype.set = function(){
+		var sx, sy, ex, ey, dx, dy, ax, ay;
+
+		sx = this.sx;
+		sy = this.sy;
+		ex = this.ex;
+		ey = this.ey;
+
+		dx = sx - ex;
+		dy = sy - ey;
+		ax = abs(dx);
+		ay = abs(dy);
+	//得到sx,sy的下一个值
+		if(ax > ay)
+		    sx += dx < 0 ? -1 : 1,
+		    sy += dy < 0 ? -( 1 * ay / ax ) : 1 * ay / ax;
+		else
+		    sx += dx < 0 ? -( 1 * ax / ay ) : 1 * ax / ay,
+		    sy += dy < 0 ? -1 : 1;
+
+		this.line = layer.path( "M" + sx + "," + sy + "L" + ex + "," + ey ).attr({
+			"stroke": color,
+			"stroke-width": stroke + "px"
+		});
+
+		cuttimeline.createTask({ start: 0, duration: life, object: this,
+		 /*onTimeUpdate: this.update, */onTimeEnd: this.end, recycle: anims });
+		return this;
+	};
+
+	ClassCutPart.prototype.update = function( time ){
+		//this.line.attr( "stroke-width", stroke * (1 - time / life) + "px" );
+	};
+
+	ClassCutPart.prototype.end = function(){
+		this.line.remove();
+		cut_line_flag = 0;
+		//var index;
+		//if( index = knifes.indexOf( this ) )
+		   // knifes.splice( index, 1 );
+	};
+
+	exports.getFlag = function(){
+		return cut_line_flag;
+	}
+
+	exports.newCut = function(){
+		if(cut_line_flag==1)
+			return cut_line_flag;
+	    lastX = lastY = null;
+	    return cut_line_flag;
+	};
+
+	exports.through = function( x, y ){
+		cut_line_flag = 1;
+		if( !switchState )
+			return ;
+		var ret = null;
+		if( lastX !== null && ( lastX != x || lastY != y ) )
+		    new ClassCutPart({ sx: lastX, sy: lastY, ex: x, ey: y }).set(),
 			ret = [ lastX, lastY, x, y ];
 
 		lastX = x;
