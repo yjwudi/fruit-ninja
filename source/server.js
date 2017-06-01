@@ -33,8 +33,8 @@ app.post("/ajaxjs.js", function(request, response){
   }
   console.log(arr.length);
   console.log(arr);
+  /*
   const execFile = require('child_process').execFile;
-  
   const child = execFile('.\\Exec\\DoubleWedgeIntersaction-argc.exe',[arr], (error, stdout, stderr) =>{
     if(error){
       throw error;
@@ -42,6 +42,8 @@ app.post("/ajaxjs.js", function(request, response){
     console.log(stdout);
     response.send(stdout);
   });
+  */
+  response.send("hello");
   
 });
 

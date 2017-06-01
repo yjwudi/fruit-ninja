@@ -969,7 +969,7 @@ define("scripts/timeline.js", function(exports){
 	
 		// interval();
 		
-		var time = 10;
+		var time = 500;//10;
 	
 		// if( Ucren.isSafari )
 		//     time = 10;
@@ -1495,7 +1495,7 @@ define("scripts/factory/fruit.js", function(exports){
 			});
 	
 			if( this.type != "boom" )
-			 	this.rotate( 0, 1/*( random( 180 ) + 90 ) * sign[ random( 2 ) ]*/ );
+			 	this.rotate( 0, 10/*( random( 180 ) + 90 ) * sign[ random( 2 ) ]*/ );
 	
 			return this;
 		};
@@ -1701,8 +1701,7 @@ define("scripts/factory/fruit.js", function(exports){
 			answer.newAnswer();
 			answer.through(arr_line[0], arr_line[1]);
 			answer.through(arr_line[2], arr_line[3]);
-		}
-			    	
+		}	    	
 		if(text.length>4)
 		{
 			var xmlhttp;
@@ -1715,22 +1714,27 @@ define("scripts/factory/fruit.js", function(exports){
 			    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
 			}
 			xmlhttp.onreadystatechange = function() {
+				log(xmlhttp.readyState);
+				log(xmlhttp.status);
+				log.clear();
 			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
 			{
 			    //console.log('服务器响应成功');
 			    //document.getElementById("out_tip").innerHTML;
-			    var ss =xmlhttp.responseText;
+			    //var ss =xmlhttp.responseText;
 			    
-			    var arr = ss.split(" ");
-			    if(arr.length==2)
+			    //var arr = ss.split(" ");
+			    //if(arr.length==2)
 			    {
 			    	//log(arr[0]);
 			    	//log(arr[1]);
-			    	arr[0] = -0.0451118;
-			    	arr[1] = -606.899;
+			    	//arr[0] = -0.0451118;
+			    	//arr[1] = -606.899;
+			    	log("gen");
+			    	log.clear();
 			    	answer.newAnswer();
-				    answer.through(100, 100);
-					answer.through(290, 390);
+				    answer.through(random(100), random(100)+300);
+					answer.through(random(100)+300, random(100));
 					/*
 			    	answer.newAnswer();
 				    answer.through(100, arr[0]*100-arr[1]);

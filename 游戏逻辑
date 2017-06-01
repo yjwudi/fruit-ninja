@@ -4,7 +4,7 @@ scene.js 141行 game.start();
 game.js 
 44行 start：
 	在start中执行类似于重载自js的setTimeout，fn是要执行的函数，执行fn时，通过setInterval设置了一个重复的周期，重复执行barbette
-	volleyNum控制水果数量，未测试
+	volleyNum控制水果数量
 30行 barbette:
 	创建fruit，调用shotout抛出
 
@@ -17,6 +17,8 @@ fruit中的半径就是半长轴。
 rotateSpeed数组记载了旋转速度
 shotout中rotate函数第二个参数控制旋转速度
 
+all.js 972行控制onshotouting的执行间隔
+
 
 todolist：
 1. 动态生成直线逻辑 done
@@ -28,6 +30,7 @@ all.js1850中layer.js可以创建一个div，设置线段坐标就可以创建�
 （2）平行的话，就是不旋转，处理一下每张水果图片的垂直图片就可以了。
 
 控制一下onShotOuting的更新频率，会不会能显示直线？
+answer line 在set函数值中的life增加一点会不会好点？
 
 
 3. 加一个button，一按就能显示目标直线
