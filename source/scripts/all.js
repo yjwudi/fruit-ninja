@@ -972,7 +972,7 @@ define("scripts/timeline.js", function(exports){
 	
 		// interval();
 		
-		var time = 40;//10;没用了
+		var time = 60;//10;没用了
 	
 		// if( Ucren.isSafari )
 		//     time = 10;
@@ -1556,7 +1556,7 @@ define("scripts/factory/fruit.js", function(exports){
 	var min = Math.min;
 	var average = function( a, b ){ return ( ( a + b ) / 2 ) >> 0; };
 	
-	var dropTime = 4800, dropXScope = 200, shadowPos = 50;
+	var dropTime = 3600, dropXScope = 200, shadowPos = 50;
 	
 	var infos = {
 		// type: [ imageSrc, width, height, radius, fixAngle, isReverse, juiceColor ]
@@ -1850,13 +1850,42 @@ define("scripts/factory/fruit.js", function(exports){
 		//this.image.rotate( 30, true );
 	};
 
+	ClassFruit.prototype.getRealLineArr = function(){
+		var arr_line = new Array(4);
+		var x1 = this.radius-5;
+		var y1 = 0;
+		var x2 = -this.radius+5;
+		var y2 = 0;
+		
+		var x, y;
+		var pi = 3.1415926;
+		var theta = 2*pi*this.angle/360;
+		//log(theta);
+		x = x1*Math.cos(theta);
+		y = x1*Math.sin(theta);
+		//log(x);
+		//log(y);
+		arr_line[0] = x+this.originX;
+		arr_line[1] = y+this.originY;
+		x = x2*Math.cos(theta);
+		y = x2*Math.sin(theta);
+		//log(x);
+		//log(y);
+		arr_line[2] = x+this.originX;
+		arr_line[3] = y+this.originY;
+		//log(arr_line[0]);
+		//log.clear();
+
+		return arr_line;
+	}
+
 	ClassFruit.prototype.getLineArr = function(){
 		var arr_line = new Array(4);
-		var x1 = this.radius;
+		var x1 = this.radius+20;
 		var y1 = 0;
-		var x2 = -this.radius;
+		var x2 = -this.radius-20;
 		var y2 = 0;
-		if(this.type=="banana")
+		if(this.type=="banana"||this.type=="sandia")
 		{
 			x1 += 20;
 			//x2 += 30;
@@ -1923,6 +1952,12 @@ define("scripts/factory/fruit.js", function(exports){
 			linearAnim( time, this.shotOutStartX, this.shotOutEndX - this.shotOutStartX, dropTime ),
 			fallOffAnim( time, this.shotOutStartY, this.shotOutEndY - this.shotOutStartY, dropTime )
 		);
+		if(this!=fruitCache[0])
+		{
+			return ;
+		}
+		else
+		{
 		var fruit_len = fruitCache.length;
 		var text = new Array;
 		var minx = 700, maxx = 0;
@@ -1934,17 +1969,19 @@ define("scripts/factory/fruit.js", function(exports){
 				continue;
 			}
 			var arr_line = fruitCache[i].getLineArr();
-			text[idx] = arr_line[0];
-			text[idx+1] = arr_line[1];
-			text[idx+2] = arr_line[2];
-			text[idx+3] = arr_line[3];
+			var arr_real_line = fruitCache[i].getRealLineArr();
+			text[idx] = arr_real_line[0];
+			text[idx+1] = arr_real_line[1];
+			text[idx+2] = arr_real_line[2];
+			text[idx+3] = arr_real_line[3];
 			idx = idx+4;
 			minx = Math.min(minx, Math.min(arr_line[0], arr_line[2]));
-			maxx = Math.max(maxx, Math.max(arr_line[0], arr_line[2]))
+			maxx = Math.max(maxx, Math.max(arr_line[0], arr_line[2]));
 			answer.newAnswer();
 			answer.through(arr_line[0], arr_line[1]);
 			answer.through(arr_line[2], arr_line[3]);
 		}
+		
 		var flag = cut.getFlag();
 		/*
 		if(mutex==0)
@@ -1953,6 +1990,7 @@ define("scripts/factory/fruit.js", function(exports){
 			log.clear();
 		}
 		*/
+	
 		if(mutex == 1 && text.length > 4 && flag == 0)
 		{
 			mutex = 0;
@@ -2011,8 +2049,8 @@ define("scripts/factory/fruit.js", function(exports){
 			xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
 			xmlhttp.send(JSON.stringify(text)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
 		}
-		
-		
+	}
+	
 	};
 
 	ClassFruit.prototype.anslineEnd = function(){
@@ -2030,6 +2068,7 @@ define("scripts/factory/fruit.js", function(exports){
 	// 掉落相关
 	
 	ClassFruit.prototype.onFalling = function( time ){
+		/*
 		var fruit_len = fruitCache.length;
 		for(var i = 0; i < fruitCache.length; i++)
 		{
@@ -2039,17 +2078,18 @@ define("scripts/factory/fruit.js", function(exports){
 				continue;
 			}
 			var arr_line = this.getLineArr();
-			/*
+			
 			log(arr_line[0]);
 			log(arr_line[1]);
 			log(arr_line[2]);
 			log(arr_line[3]);
 			log.clear();
-			*/
+			
 			answer.newAnswer();
 			answer.through(arr_line[0], arr_line[1]);
 			answer.through(arr_line[2], arr_line[3]);
 		}
+		*/
 		/*
 		if(fruit_len==2&&fruitCache.length==fruit_len)
 		{
@@ -2066,6 +2106,97 @@ define("scripts/factory/fruit.js", function(exports){
 			linearAnim( time, this.brokenPosX, this.fallTargetX - this.brokenPosX, dropTime ), 
 			dropAnim( time, this.brokenPosY, this.fallTargetY - this.brokenPosY, dropTime ) 
 		);
+		
+		var fruit_len = fruitCache.length;
+		var text = new Array;
+		var minx = 700, maxx = 0;
+		for(var i = 0, idx = 0; i < fruitCache.length; i++)
+		{
+			if(fruitCache[i].type=="boom")
+			{
+				fruit_len--;
+				continue;
+			}
+			var arr_line = fruitCache[i].getLineArr();
+			text[idx] = arr_line[0];
+			text[idx+1] = arr_line[1];
+			text[idx+2] = arr_line[2];
+			text[idx+3] = arr_line[3];
+			idx = idx+4;
+			minx = Math.min(minx, Math.min(arr_line[0], arr_line[2]));
+			maxx = Math.max(maxx, Math.max(arr_line[0], arr_line[2]))
+			answer.newAnswer();
+			answer.through(arr_line[0], arr_line[1]);
+			answer.through(arr_line[2], arr_line[3]);
+		}
+		return ;
+		var flag = cut.getFlag();
+		/*
+		if(mutex==0)
+		{
+			log(mutex);
+			log.clear();
+		}
+		*/
+		if(mutex == 1 && text.length > 4 && flag == 0)
+		{
+			mutex = 0;
+			var xmlhttp;
+  			if (window.XMLHttpRequest) 
+  			{ // code for IE7+, Firefox, Chrome, Opera, Safari
+			    xmlhttp = new XMLHttpRequest();
+			} 
+			else 
+			{ // code for IE6, IE5
+			    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange = function() {
+				
+				//log(xmlhttp.readyState);
+				//log(xmlhttp.status);
+				//log.clear();
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
+				{
+				    //console.log('服务器响应成功');
+				    //document.getElementById("out_tip").innerHTML;
+				    var ss =xmlhttp.responseText;	    
+				    var arr = ss.split(" ");
+				    if(arr.length==2)
+				    {
+				    	//log(arr[0]);
+				    	//log(arr[1]);
+				    	//arr[0] = -0.0451118;
+				    	//arr[1] = -606.899;
+				    	var cut_line_flag = cut.newCut();
+				    	//log(cut_line_flag);
+						//log.clear();
+				    	//if(cut_line_flag==0)
+					    {
+					    	//cut.through(random(100), random(100)+300);
+							//cut.through(random(100)+300, random(100));
+							//cut.through(minx, 610);
+							//cut.through(maxx, -1);
+							minx = minx - 20;
+							maxx = maxx + 20;
+							var y1 = arr[0]*minx-arr[1];
+							var y2 = arr[0]*maxx-arr[1];
+							cut.through(minx, y1);
+							cut.through(maxx, y2);
+							//answer.newAnswer();
+							//answer.through(random(100), random(100)+300);
+							//answer.through(random(100)+300, random(100));
+						}
+				    }
+				    mutex = 1;
+			    //document.getElementById("out_tip").innerHTML = ss.length;
+			}
+			}
+			
+			xmlhttp.open("POST", "http://127.0.0.1:3000/ajaxjs.js", true);
+			xmlhttp.setRequestHeader("Content-type","application/json");//需要设置成application/json
+			xmlhttp.send(JSON.stringify(text)); //body-parser解析的是字符串，所以需要把json对象转换成字符串
+		}
+		
 	};
 	
 	ClassFruit.prototype.onFallStart = function(){
@@ -5182,8 +5313,8 @@ define("scripts/object/Cut.js", function(exports){
 	var abs = Math.abs;
 
 	var life = 20;
-	var stroke = 10;
-	var color = "#cbd3db";
+	var stroke = 20;
+	var color = "#32cd32";
 	var anims = [];
 	var switchState = true;
 	var cut_line_flag = 0;

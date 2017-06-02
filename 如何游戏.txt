@@ -1,0 +1,4 @@
+1. 安装node.js
+2. 在fruit-ninja-master/source目录下使用npm安装body-parser，express
+3. 使用node.js启动server: node server
+4. 双击index.html，开始游戏
