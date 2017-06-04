@@ -1572,7 +1572,8 @@ define("scripts/factory/fruit.js", function(exports){
 	var types = [ "peach", "sandia", "apple", "banana", "basaha" ];
 	// var types = [ "sandia", "boom" ];
 	//var rotateSpeed = [ 60, 50, 40, -40, -50, -60 ];
-	var rotateSpeed = [ 0.600, 0.500, 0.400, -0.400, -0.500, -0.600 ];
+	//var rotateSpeed = [ 0.600, 0.500, 0.400, -0.400, -0.500, -0.600 ];
+	var rotateSpeed = [ 5, 4, 2, -2, -4, -5 ];
 	
 	var fruitCache = [];
 
@@ -1731,7 +1732,7 @@ define("scripts/factory/fruit.js", function(exports){
 			});
 	
 			if( this.type != "boom" )
-			 	this.rotate( 0, 10/*( random( 180 ) + 90 ) * sign[ random( 2 ) ]*/ );
+			 	this.rotate( 0, ( random( 180 ) + 90 ) * sign[ random( 2 ) ] );
 	
 			return this;
 		};
